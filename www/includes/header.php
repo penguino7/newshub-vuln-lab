@@ -320,6 +320,7 @@ $current_user = current_user();
         <a href="/category.php?id=3">Kinh tế</a>
         <a href="/category.php?id=4">Giải trí</a>
         <a href="/search.php">Tìm kiếm</a>
+        <a href="/spa/" style="color:#ffaa00;">SPA Lab</a>
         <a href="/static/about.html">Giới thiệu</a>
         <a href="/static/contact.html">Liên hệ</a>
         <?php if (is_admin()): ?>

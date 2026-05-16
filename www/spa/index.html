@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NewsHub SPA Lab</title>
+    <link rel="stylesheet" href="/spa/style.css" />
+    <script src="/spa/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <a class="brand" href="/spa/search">NewsHub SPA</a>
+        <span class="subtitle">API-driven lab</span>
+      </div>
+      <nav class="nav">
+        <a href="/index.php">Classic</a>
+        <a href="/spa/search">Search</a>
+        <a href="/spa/article/1">Article</a>
+        <a href="/spa/comments/1">Comments</a>
+        <a href="/spa/logs">Logs</a>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="app" class="surface" aria-live="polite">
+        <div class="loading">Loading...</div>
+      </section>
+    </main>
+  </body>
+</html>

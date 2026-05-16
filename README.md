@@ -27,7 +27,7 @@ Day la cach nen dung vi source mac dinh da tro `DB_HOST=db`, dung dung ten servi
 
 ```bash
 sudo apt update
-sudo apt install -y docker.io docker-compose-plugin
+sudo apt install -y docker.io docker-compose unzip
 sudo systemctl enable --now docker
 sudo usermod -aG docker "$USER"
 newgrp docker
@@ -37,7 +37,7 @@ Kiem tra:
 
 ```bash
 docker --version
-docker compose version
+docker compose version || docker-compose version
 ```
 
 ### 2. Dua source vao Kali
@@ -65,6 +65,8 @@ newshub/
 
 ```bash
 docker compose up -d --build
+# Neu lenh tren khong co tren Kali, dung:
+docker-compose up -d --build
 ```
 
 Xem trang thai:
@@ -73,6 +75,10 @@ Xem trang thai:
 docker compose ps
 docker compose logs -f web
 docker compose logs -f db
+# Hoac voi docker-compose:
+docker-compose ps
+docker-compose logs -f web
+docker-compose logs -f db
 ```
 
 Mo trinh duyet tren Kali:
@@ -92,6 +98,8 @@ Sau do chay lai:
 
 ```bash
 docker compose up -d
+# Hoac:
+docker-compose up -d
 ```
 
 Va truy cap:
@@ -104,6 +112,8 @@ http://127.0.0.1:8081/
 
 ```bash
 docker compose exec db mariadb -uwebuser -pwebpass123 newshub
+# Hoac:
+docker-compose exec db mariadb -uwebuser -pwebpass123 newshub
 ```
 
 Mot so lenh kiem tra nhanh:
@@ -121,12 +131,17 @@ Lenh nay xoa container va volume database, sau do import lai `db/init.sql` tu da
 ```bash
 docker compose down -v
 docker compose up -d --build
+# Hoac:
+docker-compose down -v
+docker-compose up -d --build
 ```
 
 ### 6. Dung lab
 
 ```bash
 docker compose down
+# Hoac:
+docker-compose down
 ```
 
 ## Cach 2: Chay truc tiep bang Apache, PHP va MariaDB tren Kali
@@ -218,6 +233,7 @@ EOF
 Enable site va reload Apache:
 
 ```bash
+sudo a2enmod rewrite
 sudo a2ensite newshub.conf
 sudo systemctl reload apache2
 ```
@@ -283,6 +299,73 @@ Dung bang `Ctrl+C`.
 - `/admin/dashboard.php`: SQLi UNION-based qua `filter_cat`, stored XSS tu search logs.
 - `/admin/users.php`: SQLi boolean-based blind qua `search_user`.
 - `/admin/news_manage.php`: SQLi qua `edit_id`, stored XSS qua `tags`.
+
+## SPA Lab
+
+SPA lab moi nam tai:
+
+```text
+http://127.0.0.1:8080/spa/
+```
+
+Day la mot frontend vanilla JavaScript dung History API router va goi API JSON bang `fetch()`. HTML ban dau hau nhu khong co du lieu bai viet; du lieu duoc lay tu API roi render tren browser.
+
+File moi:
+
+```text
+www/spa/index.html
+www/spa/app.js
+www/spa/style.css
+www/api/spa/_bootstrap.php
+www/api/spa/search.php
+www/api/spa/news.php
+www/api/spa/comments.php
+www/api/spa/comment_add.php
+www/api/spa/logs.php
+```
+
+Route SPA:
+
+- `/spa/search`: tim bai viet qua API JSON.
+- `/spa/article/1`: xem bai viet qua API JSON.
+- `/spa/comments/1`: xem va them comment qua API.
+- `/spa/logs`: xem search logs qua API.
+
+SPA dung History API, khong dung hash route. File `www/spa/.htaccess` rewrite cac route `/spa/*` ve `/spa/index.html`, nen refresh truc tiep `/spa/article/1` van hoat dong khi Apache da bat `mod_rewrite` va `AllowOverride All`.
+
+API SPA:
+
+- `/api/spa/search.php?q=...`: SQLi trong `q`, tra JSON, keyword duoc luu vao `search_logs`.
+- `/api/spa/news.php?id=...`: SQLi UNION/error-based trong `id`.
+- `/api/spa/comments.php?news_id=...`: SQLi trong `news_id`, tra comment raw.
+- `/api/spa/comment_add.php`: POST comment raw, tao stored XSS.
+- `/api/spa/logs.php?keyword=...`: SQLi trong `keyword`, tra search logs raw.
+
+Payload test nhanh cho SPA:
+
+```text
+/spa/search?q=<img src=x onerror=alert(1)>
+/spa/comments/1
+```
+
+Them comment trong SPA voi noi dung:
+
+```html
+<img src=x onerror=alert(1)>
+```
+
+Sau do reload `/spa/comments/1` de thay stored XSS.
+
+Test SQLi API JSON:
+
+```text
+/api/spa/search.php?q=' OR 1=1--%20
+/api/spa/news.php?id=1 UNION SELECT 1,2,3,4,5,6,7,8,9,10,11--%20
+/api/spa/comments.php?news_id=1 OR 1=1
+/api/spa/logs.php?keyword=' OR 1=1--%20
+```
+
+Khi kiem thu bang Burp/ZAP, hay bat traffic trong tab Network vi SPA se goi cac API tren sau khi trang `/spa/` da load.
 
 ## Troubleshooting
 
