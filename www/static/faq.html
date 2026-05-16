@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>FAQ - NewsHub</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        background: #f0f0f0;
+        margin: 0;
+      }
+      #header {
+        background: #003366;
+        color: white;
+        padding: 10px 20px;
+      }
+      #header h1 a {
+        color: white;
+        text-decoration: none;
+      }
+      #nav {
+        background: #004080;
+        padding: 5px 20px;
+      }
+      #nav a {
+        color: #cce0ff;
+        margin-right: 15px;
+        font-size: 13px;
+        text-decoration: none;
+      }
+      #wrapper {
+        max-width: 800px;
+        margin: 20px auto;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 20px;
+      }
+      h2 {
+        color: #003366;
+        border-bottom: 2px solid #003366;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+      }
+      details {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin-bottom: 8px;
+      }
+      summary {
+        font-weight: bold;
+        cursor: pointer;
+        color: #003366;
+      }
+      summary:hover {
+        color: #cc6600;
+      }
+      p {
+        line-height: 1.6;
+        padding-top: 8px;
+      }
+      #footer {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <h1><a href="/index.php">NewsHub</a></h1>
+    </div>
+    <div id="nav">
+      <a href="/index.php">Trang chủ</a>
+      <a href="/search.php">Tìm kiếm</a>
+      <a href="/static/about.html">Giới thiệu</a>
+      <a href="/static/contact.html">Liên hệ</a>
+      <a href="/static/faq.html">FAQ</a>
+    </div>
+    <div id="wrapper">
+      <h2>Câu hỏi thường gặp (FAQ)</h2>
+
+      <details open>
+        <summary>Làm thế nào để đăng ký tài khoản?</summary>
+        <p>
+          Nhấn vào nút <a href="/user/register.php">Đăng ký</a> trên góc trên
+          cùng bên phải, điền thông tin và làm theo hướng dẫn. Tài khoản sẽ được
+          kích hoạt ngay lập tức.
+        </p>
+      </details>
+
+      <details>
+        <summary>Tôi quên mật khẩu, phải làm gì?</summary>
+        <p>
+          Hiện tại tính năng khôi phục mật khẩu qua email đang được phát triển.
+          Vui lòng liên hệ admin qua trang
+          <a href="/static/contact.html">Liên hệ</a> để được hỗ trợ.
+        </p>
+      </details>
+
+      <details>
+        <summary>Làm thế nào để gửi bình luận?</summary>
+        <p>
+          Mở một bài viết bất kỳ, cuộn xuống phần "Để lại bình luận" ở cuối
+          trang. Bạn có thể bình luận mà không cần đăng nhập (với tư cách
+          Khách), hoặc đăng nhập để bình luận với tên tài khoản.
+        </p>
+      </details>
+
+      <details>
+        <summary>Bình luận của tôi có bị kiểm duyệt không?</summary>
+        <p>
+          Tất cả bình luận được đăng tải trực tiếp và công khai ngay lập tức.
+          Chúng tôi tin tưởng vào cộng đồng người dùng. Các bình luận vi phạm sẽ
+          bị xóa khi có báo cáo.
+        </p>
+      </details>
+
+      <details>
+        <summary>Làm thế nào để gửi tin tức / bài viết?</summary>
+        <p>
+          Hiện tại chỉ có biên tập viên và admin mới có thể đăng bài. Nếu bạn có
+          tin tức muốn chia sẻ, hãy gửi qua form
+          <a href="/static/contact.html">Liên hệ</a>.
+        </p>
+      </details>
+
+      <details>
+        <summary>Tôi tìm bài viết cũ như thế nào?</summary>
+        <p>
+          Sử dụng tính năng <a href="/search.php">Tìm kiếm</a> để tìm bài theo
+          từ khóa, hoặc duyệt theo <a href="/category.php?id=1">Chuyên mục</a>.
+          Bạn cũng có thể xem <a href="/sitemap.php">Sitemap</a> để tổng quan
+          toàn bộ nội dung.
+        </p>
+      </details>
+
+      <details>
+        <summary>RSS Feed là gì và cách dùng?</summary>
+        <p>
+          RSS cho phép bạn theo dõi NewsHub thông qua các ứng dụng đọc tin (RSS
+          reader) mà không cần vào website. Link RSS:
+          <a href="/rss.php">/rss.php</a>
+        </p>
+      </details>
+
+      <p style="margin-top: 20px; color: #666">
+        Không tìm thấy câu trả lời?
+        <a href="/static/contact.html">Liên hệ với chúng tôi</a>.
+      </p>
+    </div>
+    <div id="footer">
+      &copy; 2024 NewsHub | <a href="/index.php">Trang chủ</a>
+    </div>
+  </body>
+</html>

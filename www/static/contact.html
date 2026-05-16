@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Liên hệ - NewsHub</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        background: #f0f0f0;
+        margin: 0;
+      }
+      #header {
+        background: #003366;
+        color: white;
+        padding: 10px 20px;
+      }
+      #header h1 a {
+        color: white;
+        text-decoration: none;
+      }
+      #nav {
+        background: #004080;
+        padding: 5px 20px;
+      }
+      #nav a {
+        color: #cce0ff;
+        margin-right: 15px;
+        font-size: 13px;
+        text-decoration: none;
+      }
+      #wrapper {
+        max-width: 800px;
+        margin: 20px auto;
+        background: white;
+        border: 1px solid #ccc;
+        padding: 20px;
+      }
+      h2 {
+        color: #003366;
+        border-bottom: 2px solid #003366;
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+      }
+      .contact-info {
+        background: #f0f4ff;
+        border-left: 4px solid #003366;
+        padding: 12px 15px;
+        margin-bottom: 15px;
+      }
+      .form-group {
+        margin-bottom: 12px;
+      }
+      .form-group label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 4px;
+        font-size: 13px;
+      }
+      .form-group input,
+      .form-group textarea {
+        width: 100%;
+        padding: 7px;
+        border: 1px solid #ccc;
+        font-size: 13px;
+        box-sizing: border-box;
+      }
+      .btn {
+        background: #003366;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        cursor: pointer;
+      }
+      #footer {
+        text-align: center;
+        padding: 20px;
+        color: #888;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <h1><a href="/index.php">NewsHub</a></h1>
+    </div>
+    <div id="nav">
+      <a href="/index.php">Trang chủ</a>
+      <a href="/search.php">Tìm kiếm</a>
+      <a href="/static/about.html">Giới thiệu</a>
+      <a href="/static/contact.html">Liên hệ</a>
+      <a href="/static/faq.html">FAQ</a>
+    </div>
+    <div id="wrapper">
+      <h2>Liên hệ với chúng tôi</h2>
+
+      <div class="contact-info">
+        <strong>📍 Địa chỉ:</strong> Tầng 5, Tòa nhà ABC, 123 Phố Huế, Hà Nội<br />
+        <strong>📞 Điện thoại:</strong> (024) 3825-xxxx<br />
+        <strong>📧 Email:</strong> contact@newshub.local<br />
+        <strong>🕐 Giờ làm việc:</strong> Thứ 2 - Thứ 6: 8:00 - 18:00
+      </div>
+
+      <h2>Gửi tin nhắn</h2>
+      <!-- Static form - no backend processing (for crawling) -->
+      <form
+        action="#"
+        method="POST"
+        onsubmit="
+          alert('Cảm ơn! Chúng tôi sẽ phản hồi sớm nhất.');
+          return false;
+        "
+      >
+        <div class="form-group">
+          <label>Họ và tên *</label>
+          <input
+            type="text"
+            name="name"
+            required
+            placeholder="Nhập họ và tên"
+          />
+        </div>
+        <div class="form-group">
+          <label>Email *</label>
+          <input
+            type="email"
+            name="email"
+            required
+            placeholder="email@example.com"
+          />
+        </div>
+        <div class="form-group">
+          <label>Chủ đề</label>
+          <input
+            type="text"
+            name="subject"
+            placeholder="Phản ánh / Góp ý / Hợp tác"
+          />
+        </div>
+        <div class="form-group">
+          <label>Nội dung *</label>
+          <textarea
+            name="message"
+            rows="5"
+            required
+            placeholder="Nhập nội dung tin nhắn..."
+          ></textarea>
+        </div>
+        <button type="submit" class="btn">Gửi tin nhắn</button>
+      </form>
+
+      <div style="margin-top: 20px; font-size: 13px; color: #666">
+        Hoặc theo dõi chúng tôi tại:
+        <a href="#">Facebook</a> | <a href="#">Twitter</a> |
+        <a href="#">YouTube</a>
+      </div>
+    </div>
+    <div id="footer">
+      &copy; 2024 NewsHub | <a href="/index.php">Trang chủ</a>
+    </div>
+  </body>
+</html>
