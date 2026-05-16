@@ -158,7 +158,6 @@
           .join("");
       }
 
-      html += '<pre class="code">' + JSON.stringify(data, null, 2) + "</pre>";
       output.innerHTML = html;
     });
   }
@@ -179,8 +178,7 @@
           "SQLi UNION API",
           "DOM XSS Sink"
         ]) +
-        '<div class="content grid">' +
-        "<div>" +
+        '<div class="content">' +
         "<h2>" +
         article.title +
         "</h2>" +
@@ -197,13 +195,6 @@
         '<p><a class="button" href="/spa/comments/' +
         article.id +
         '">Open comments</a></p>' +
-        "</div>" +
-        '<aside class="side">' +
-        "<h3>API response</h3>" +
-        '<pre class="code">' +
-        JSON.stringify(data, null, 2) +
-        "</pre>" +
-        "</aside>" +
         "</div>";
     });
   }
@@ -243,16 +234,14 @@
           "Stored XSS",
           "SQLi JSON API"
         ]) +
-        '<div class="content grid">' +
-        "<div>" +
+        '<div class="content">' +
         '<div class="notice">Article ID: <strong>' +
         data.news_id +
         "</strong></div>" +
         '<div id="comment-list">' +
         commentHtml +
         "</div>" +
-        "</div>" +
-        '<aside class="side">' +
+        '<div style="margin-top:18px;padding-top:14px;border-top:1px solid #e4e9ee;">' +
         "<h3>Add comment</h3>" +
         '<form id="comment-form" class="form-stack">' +
         '<input name="news_id" value="' +
@@ -262,10 +251,7 @@
         '<textarea name="content" placeholder="Comment body"></textarea>' +
         "<button>Submit</button>" +
         "</form>" +
-        '<pre class="code">' +
-        JSON.stringify(data, null, 2) +
-        "</pre>" +
-        "</aside>" +
+        "</div>" +
         "</div>";
 
       document.getElementById("comment-form").addEventListener("submit", function (event) {
@@ -340,7 +326,6 @@
             .join("")
         : '<tr><td colspan="4">No log rows.</td></tr>';
       html += "</tbody></table>";
-      html += '<pre class="code">' + JSON.stringify(data, null, 2) + "</pre>";
       output.innerHTML = html;
     });
   }
