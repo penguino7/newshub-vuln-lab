@@ -1,437 +1,433 @@
-# Tool Recon Kiểm Thử Web
+# NewsHub Vulnerable Lab
 
-Đây là tool recon tổng quát để thu thập endpoint, form, tham số URL/body/JSON và chuẩn hóa tất cả về một schema chung. Tool không hardcode theo một website cụ thể, có thể dùng cho NewsHub lab hoặc các web khác nếu cấu hình đúng `base_url`, `scope` và `seeds`.
+NewsHub là một lab PHP/MySQL cố ý chứa lỗ hổng để thực hành kiểm thử bảo mật web. Lab tập trung vào:
 
-## Ý Tưởng
+- SQL Injection
+- Reflected XSS
+- Stored XSS
+- DOM-based XSS
+- SPA/API-driven rendering
 
-Tool đi theo pipeline:
+Chỉ chạy lab trong môi trường local hoặc mạng lab riêng. Không public ra Internet.
 
-```text
-static crawler
-playwright dynamic crawler
-HAR importer
-manual seed importer
-        ↓
-normalize
-        ↓
-enrich
-        ↓
-dedupe
-        ↓
-export inventory
-```
-
-Mục tiêu là gom dữ liệu từ nhiều nguồn nhưng xuất ra cùng một dạng:
-
-```text
-inventory.json
-inventory.md
-params.txt
-```
-
-## Cấu Trúc File
+## Cấu trúc dự án
 
 ```text
 .
-├── README.md
-├── requirements.txt
-├── config.example.json
-├── seeds.example.txt
-└── recontool/
-    ├── __main__.py
-    ├── cli.py
-    ├── config.py
-    ├── models.py
-    ├── normalizer.py
-    ├── enrich.py
-    ├── dedupe.py
-    ├── exporters.py
-    ├── http_client.py
-    ├── scope.py
-    ├── crawlers/
-    │   ├── static_html.py
-    │   └── playwright_dynamic.py
-    └── importers/
-        ├── har.py
-        └── manual_seed.py
+├── Dockerfile
+├── docker-compose.yml
+├── apache-newshub.conf
+├── db/
+│   └── init.sql
+├── www/
+│   ├── index.php
+│   ├── search.php
+│   ├── news.php
+│   ├── category.php
+│   ├── user/
+│   ├── admin/
+│   ├── comment/
+│   ├── api/
+│   │   ├── suggest.php
+│   │   ├── track.php
+│   │   └── spa/
+│   ├── spa/
+│   │   ├── index.html
+│   │   ├── app.js
+│   │   ├── style.css
+│   │   └── .htaccess
+│   └── static/
+└── XSS_SQLI_TESTING_GUIDE.md
 ```
 
-## Tính Năng Hiện Có
+Các thành phần chính:
 
-### Static HTML crawler
+- `www/`: mã nguồn web, được serve làm document root.
+- `db/init.sql`: tạo database, bảng, dữ liệu mẫu và fake secret cho bài SQLi.
+- `www/config/db.php`: cấu hình kết nối database.
+- `www/spa/`: SPA lab dùng JavaScript `fetch()` để gọi API JSON.
+- `www/api/spa/`: API JSON cho SPA, cố ý chứa SQLi/XSS.
 
-Không chạy JavaScript. Dùng để lấy:
+Thông tin database mặc định:
 
 ```text
-link <a href>
-form action/method
-input name
-textarea name
-select name
-query params
-status code
-response content-type
+DB_HOST=db
+DB_NAME=newshub
+DB_USER=webuser
+DB_PASS=webpass123
 ```
 
-### Playwright dynamic crawler
-
-Chạy browser thật, phù hợp SPA. Dùng để lấy:
+## Tài khoản mẫu
 
 ```text
-fetch/XHR API
-route SPA
-request sinh ra bởi JavaScript
-status code
-response content-type
-POST body
-JSON body
+admin / admin123
+editor1 / editor123
+thinhnv / password123
+minhlt / password
+huongnt / 12345678
 ```
 
-Phần này là tùy chọn. Nếu chưa cài Playwright, tool vẫn chạy static/importer bình thường.
+## Chạy lab bằng Docker trên Kali
 
-### HAR importer
+Đây là cách khuyến nghị.
 
-Đọc file `.har` export từ:
+### 1. Cài Docker
 
-```text
-Chrome DevTools
-Firefox DevTools
-Playwright
-ZAP
-proxy khác có hỗ trợ HAR
+Trên Kali:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose unzip
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+newgrp docker
 ```
-
-### Manual seed importer
-
-Đọc danh sách endpoint do bạn tự viết trong file text hoặc JSON. Hữu ích khi crawler không tự thấy endpoint ẩn.
-
-### Normalize
-
-Chuẩn hóa request về schema chung:
-
-```text
-method
-url
-scheme
-host
-port
-path
-canonical_path
-query params
-body params
-json params
-auth_context
-content-type
-status
-source_tool
-```
-
-### Enrich
-
-Suy luận candidate test:
-
-```text
-sqli
-sqli_json
-reflected_xss_candidate
-stored_xss_candidate
-api_xss_source
-form_endpoint
-```
-
-### Dedupe
-
-Gom endpoint trùng bằng fingerprint:
-
-```text
-method + host + canonical_path + query param names + body param names + content-type + auth_context
-```
-
-Ví dụ:
-
-```text
-GET /news.php?id=1
-GET /news.php?id=2
-```
-
-được gom thành:
-
-```text
-GET /news.php?id={int}
-```
-
-## Cài Đặt
-
-Tool core dùng Python standard library. Cần Python 3.11+.
 
 Kiểm tra:
 
 ```bash
-python --version
+docker --version
+docker compose version || docker-compose version
 ```
 
-Nếu muốn dùng Playwright dynamic crawler:
+### 2. Chạy lab
+
+Vào thư mục dự án:
 
 ```bash
-pip install -r requirements.txt
-python -m playwright install chromium
+cd ~/labs/Vuln-lab
 ```
 
-Nếu chỉ dùng static crawler, manual seed và HAR importer thì không cần cài thêm package.
+Nếu máy dùng `docker compose`:
 
-Nếu trên Windows gặp lỗi quyền với `__pycache__`, xóa thư mục cache rồi chạy lại:
-
-```powershell
-Get-ChildItem -Recurse -Directory -Filter __pycache__ | Remove-Item -Recurse -Force
+```bash
+docker compose up -d --build
 ```
 
-## Chạy Nhanh Với NewsHub Lab
+Nếu Kali chỉ có `docker-compose`:
 
-Giả sử NewsHub đang chạy tại:
+```bash
+docker-compose up -d --build
+```
+
+Kiểm tra container:
+
+```bash
+docker compose ps || docker-compose ps
+```
+
+Xem log:
+
+```bash
+docker compose logs -f web || docker-compose logs -f web
+docker compose logs -f db || docker-compose logs -f db
+```
+
+Mở lab:
 
 ```text
-http://127.0.0.1:8080
+http://127.0.0.1:12001/
 ```
 
-Chạy:
-
-```bash
-python -m recontool -c config.example.json
-```
-
-Output:
+Nếu truy cập từ máy host vào Kali VM:
 
 ```text
-recon-output/inventory.json
-recon-output/inventory.md
-recon-output/params.txt
+http://IP_CUA_KALI:12001/
 ```
 
-## Chạy Static Crawler
+## Các URL chính
 
-```bash
-python -m recontool \
-  --base-url http://127.0.0.1:8080 \
-  --seed / \
-  --seed /search.php?q=test \
-  --seed /spa/search \
-  --out recon-output
-```
-
-Trên PowerShell có thể viết một dòng:
-
-```powershell
-python -m recontool --base-url http://127.0.0.1:8080 --seed / --seed /search.php?q=test --seed /spa/search --out recon-output
-```
-
-## Chạy Playwright Dynamic Crawler
-
-Bật trong config:
-
-```json
-"dynamic": {
-  "enabled": true,
-  "max_pages": 30,
-  "timeout_ms": 15000,
-  "headless": true,
-  "storage_state": ""
-}
-```
-
-Hoặc bật bằng CLI:
-
-```bash
-python -m recontool -c config.example.json --dynamic
-```
-
-Dynamic crawler sẽ mở browser thật, vào seed URL, bắt request/response sinh ra bởi JavaScript rồi normalize thành endpoint record.
-
-## Import HAR
-
-Export HAR từ DevTools hoặc proxy, sau đó:
-
-```bash
-python -m recontool \
-  --base-url http://127.0.0.1:8080 \
-  --har traffic.har \
-  --no-static
-```
-
-Hoặc cấu hình trong `config.example.json`:
-
-```json
-"imports": {
-  "har_files": ["traffic.har"],
-  "manual_seed_files": []
-}
-```
-
-## Import Manual Seed
-
-File text:
+Classic PHP app:
 
 ```text
-GET http://127.0.0.1:8080/search.php?q=test
-GET http://127.0.0.1:8080/api/spa/news.php?id=1
-POST http://127.0.0.1:8080/api/spa/comment_add.php news_id=1&author_name=manual&content=hello
+http://127.0.0.1:12001/
+http://127.0.0.1:12001/search.php
+http://127.0.0.1:12001/news.php?id=1
+http://127.0.0.1:12001/category.php?id=1
+http://127.0.0.1:12001/user/login.php
+http://127.0.0.1:12001/admin/dashboard.php
 ```
 
-Chạy:
-
-```bash
-python -m recontool --manual seeds.example.txt --no-static
-```
-
-## Config Quan Trọng
-
-### base_url
-
-Target chính:
-
-```json
-"base_url": "http://127.0.0.1:8080"
-```
-
-### scope
-
-Giới hạn host/path được crawl:
-
-```json
-"scope": {
-  "include_hosts": ["127.0.0.1", "localhost"],
-  "exclude_paths": ["/user/logout.php"]
-}
-```
-
-### seeds
-
-URL khởi đầu:
-
-```json
-"seeds": [
-  "/",
-  "/search.php?q=test",
-  "/spa/search"
-]
-```
-
-### auth_context
-
-Đánh dấu context:
-
-```json
-"auth_context": "anonymous"
-```
-
-Khi crawl bằng session admin, đổi thành:
-
-```json
-"auth_context": "admin"
-```
-
-## Authenticated Crawl
-
-Bản hiện tại chưa tự login form. Có 2 cách thực tế:
-
-### Cách 1: Playwright storage_state
-
-Tạo storage state bằng Playwright riêng, rồi cấu hình:
-
-```json
-"dynamic": {
-  "enabled": true,
-  "storage_state": "admin-state.json"
-}
-```
-
-### Cách 2: Dùng HAR/Burp/ZAP
-
-Đăng nhập thủ công bằng browser/proxy, export HAR hoặc traffic history, rồi import vào tool.
-
-## Output Schema Rút Gọn
-
-Mỗi endpoint record có dạng:
-
-```json
-{
-  "method": "GET",
-  "url": "http://127.0.0.1:8080/search.php?q=test",
-  "scheme": "http",
-  "host": "127.0.0.1",
-  "port": 8080,
-  "path": "/search.php",
-  "canonical_path": "/search.php",
-  "auth_context": "anonymous",
-  "response_content_type": "text/html",
-  "statuses": [200],
-  "params": [
-    {
-      "name": "q",
-      "location": "query",
-      "type_hint": "string",
-      "sample_values": ["test"],
-      "reflected": true,
-      "candidate_tests": ["reflected_xss_candidate", "sqli"]
-    }
-  ],
-  "source_tools": ["static_html_crawler"],
-  "candidate_tests": ["reflected_xss_candidate", "sqli"]
-}
-```
-
-## Dedupe Mode
-
-Strict:
-
-```bash
-python -m recontool -c config.example.json --dedupe-mode strict
-```
-
-Smart:
-
-```bash
-python -m recontool -c config.example.json --dedupe-mode smart
-```
-
-Khác biệt:
+SPA lab:
 
 ```text
-strict: ít gom nhầm hơn
-smart: gom /news/1 và /news/2 thành /news/{int}
+http://127.0.0.1:12001/spa/search
+http://127.0.0.1:12001/spa/article/1
+http://127.0.0.1:12001/spa/comments/1
+http://127.0.0.1:12001/spa/logs
 ```
 
-## Gợi Ý Workflow
-
-1. Chạy static crawler trước.
-2. Chạy dynamic crawler nếu web có SPA/JS.
-3. Import HAR từ browser/proxy nếu có.
-4. Thêm manual seed cho endpoint ẩn.
-5. Xem `inventory.md`.
-6. Dùng `params.txt` để lên test plan XSS/SQLi.
-
-## Giới Hạn Hiện Tại
-
-- Chưa tự login form.
-- Chưa tự submit form để tránh gây thay đổi dữ liệu ngoài ý muốn.
-- Chưa có active scanner XSS/SQLi, mới dừng ở recon và gợi ý candidate tests.
-- Burp/ZAP importer riêng chưa có, ưu tiên HAR importer trước vì dễ dùng chung.
-
-## Kiểm Tra Cú Pháp
-
-```bash
-python -m compileall recontool
-```
-
-Kiểm tra nhanh không cần target đang chạy:
-
-```bash
-python -m recontool --manual seeds.example.txt --no-static --out test-output
-```
-
-Nếu chạy đúng sẽ sinh ra:
+Static pages:
 
 ```text
-test-output/inventory.json
-test-output/inventory.md
-test-output/params.txt
+http://127.0.0.1:12001/static/about.html
+http://127.0.0.1:12001/static/contact.html
+http://127.0.0.1:12001/static/faq.html
 ```
+
+## SPA Lab
+
+SPA nằm tại:
+
+```text
+/spa/search
+```
+
+SPA này dùng History API, không dùng route dạng `#/`. Các route như `/spa/article/1` hoặc `/spa/comments/1` được rewrite về `www/spa/index.html` bằng file:
+
+```text
+www/spa/.htaccess
+```
+
+Các route SPA:
+
+```text
+/spa/search
+/spa/article/1
+/spa/comments/1
+/spa/logs
+```
+
+Các API JSON SPA:
+
+```text
+/api/spa/search.php?q=...
+/api/spa/news.php?id=...
+/api/spa/comments.php?news_id=...
+/api/spa/comment_add.php
+/api/spa/logs.php?keyword=...
+```
+
+Ý tưởng của SPA lab:
+
+- HTML ban đầu không chứa dữ liệu chính.
+- JavaScript gọi API bằng `fetch()`.
+- API trả JSON.
+- Frontend render JSON vào DOM bằng `innerHTML`.
+- Từ đó có thể kiểm thử DOM XSS, Stored XSS qua JSON và SQLi trên API.
+
+## Các nhóm lỗ hổng chính
+
+### SQL Injection
+
+Endpoint tiêu biểu:
+
+```text
+/search.php?q=...
+/news.php?id=...
+/category.php?id=...
+/user/login.php
+/user/profile.php?user=...
+/api/track.php?id=...&ref=...
+/admin/dashboard.php?filter_cat=...
+/admin/users.php?search_user=...
+/admin/news_manage.php?edit_id=...
+/api/spa/search.php?q=...
+/api/spa/news.php?id=...
+/api/spa/comments.php?news_id=...
+/api/spa/logs.php?keyword=...
+```
+
+Các dạng có trong lab:
+
+- Error-based SQLi
+- UNION-based SQLi
+- Boolean-based blind SQLi
+- Time-based blind SQLi
+- SQLi authentication bypass
+- SQLi trong JSON API
+
+### XSS
+
+Endpoint/route tiêu biểu:
+
+```text
+/search.php?q=...
+/comment/add.php
+/user/register.php
+/user/profile.php
+/admin/dashboard.php
+/admin/users.php
+/api/suggest.php?q=...
+/spa/search
+/spa/comments/1
+/spa/logs
+```
+
+Các dạng có trong lab:
+
+- Reflected XSS
+- Stored XSS
+- DOM-based XSS
+- XSS qua JSON API render bằng `innerHTML`
+
+Chi tiết payload, tham số và vị trí sink nằm trong:
+
+```text
+XSS_SQLI_TESTING_GUIDE.md
+```
+
+## Reset database
+
+Khi dùng Docker, reset toàn bộ database về trạng thái ban đầu:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+Hoặc:
+
+```bash
+docker-compose down -v
+docker-compose up -d --build
+```
+
+Lưu ý: `db/init.sql` chỉ được import khi volume database rỗng. Vì vậy muốn import lại seed data thì cần `down -v`.
+
+## Dừng lab
+
+```bash
+docker compose down
+```
+
+Hoặc:
+
+```bash
+docker-compose down
+```
+
+## Chạy trực tiếp bằng Apache/PHP/MariaDB trên Kali
+
+Nếu không dùng Docker:
+
+```bash
+sudo apt update
+sudo apt install -y apache2 mariadb-server php libapache2-mod-php php-mysql php-mbstring rsync
+sudo systemctl enable --now apache2 mariadb
+```
+
+Tạo database:
+
+```bash
+cd ~/labs/Vuln-lab
+
+sudo mariadb <<'SQL'
+CREATE DATABASE IF NOT EXISTS newshub CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'webuser'@'localhost' IDENTIFIED BY 'webpass123';
+GRANT ALL PRIVILEGES ON newshub.* TO 'webuser'@'localhost';
+FLUSH PRIVILEGES;
+SQL
+
+sudo mariadb < db/init.sql
+```
+
+Copy source:
+
+```bash
+sudo mkdir -p /var/www/newshub
+sudo rsync -av --delete www/ /var/www/newshub/
+sudo chown -R www-data:www-data /var/www/newshub
+```
+
+Tạo VirtualHost port `12001`:
+
+```bash
+grep -q '^Listen 12001$' /etc/apache2/ports.conf || echo 'Listen 12001' | sudo tee -a /etc/apache2/ports.conf
+
+sudo tee /etc/apache2/sites-available/newshub.conf >/dev/null <<'EOF'
+<VirtualHost *:12001>
+    ServerName newshub.local
+    DocumentRoot /var/www/newshub
+
+    SetEnv DB_HOST localhost
+    SetEnv DB_NAME newshub
+    SetEnv DB_USER webuser
+    SetEnv DB_PASS webpass123
+
+    <Directory /var/www/newshub>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/newshub_error.log
+    CustomLog ${APACHE_LOG_DIR}/newshub_access.log combined
+</VirtualHost>
+EOF
+```
+
+Enable site:
+
+```bash
+sudo a2enmod rewrite
+sudo a2ensite newshub.conf
+sudo systemctl reload apache2
+```
+
+Mở:
+
+```text
+http://127.0.0.1:12001/
+```
+
+## Troubleshooting
+
+### Lỗi `Connection failed`
+
+Kiểm tra container:
+
+```bash
+docker compose ps || docker-compose ps
+docker compose logs db || docker-compose logs db
+```
+
+Kiểm tra thông tin DB trong:
+
+```text
+www/config/db.php
+docker-compose.yml
+```
+
+### Reload `/spa/article/1` bị 404
+
+Cần đảm bảo Docker image đã được rebuild sau khi thêm `apache-newshub.conf` và `.htaccess`:
+
+```bash
+docker compose up -d --build
+```
+
+Hoặc:
+
+```bash
+docker-compose up -d --build
+```
+
+Nếu chạy Apache trực tiếp, cần bật rewrite:
+
+```bash
+sudo a2enmod rewrite
+sudo systemctl reload apache2
+```
+
+### Thiếu `mb_substr()`
+
+Cài extension:
+
+```bash
+sudo apt install -y php-mbstring
+sudo systemctl reload apache2
+```
+
+Với Docker:
+
+```bash
+docker compose build --no-cache web
+docker compose up -d
+```
+
+## Ghi chú
+
+Một số link như `/rss.php` và `/sitemap.php` được giao diện tham chiếu nhưng hiện chưa có file tương ứng. Đây không phải lỗi triển khai chính của lab.
+
+Nội dung tiếng Việt trong seed data có một số đoạn bị lỗi encoding từ dữ liệu ban đầu. Điều này không ảnh hưởng đến mục tiêu kiểm thử XSS/SQLi.

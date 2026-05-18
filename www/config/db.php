@@ -10,7 +10,7 @@ define('DB_PASS', getenv('DB_PASS') ?: 'webpass123');
 define('DB_CHARSET', 'utf8mb4');
 
 define('SITE_NAME', 'NewsHub');
-define('SITE_URL', 'http://localhost:8080');
+define('SITE_URL', 'http://localhost:12001');
 
 // ============================================
 // INTENTIONALLY VULNERABLE - NO REAL SECURITY
