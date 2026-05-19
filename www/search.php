@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================
 // search.php - Tìm kiếm tin tức
 // VULNERABILITY 1: SQLi Error-based (tham số ?q=)
@@ -173,26 +173,6 @@ if ($q !== '' || $author !== '') {
             </div>
         </div>
 
-        <!-- Recent searches -->
-        <div class="box">
-            <div class="box-title">🔥 TÌM KIẾM PHỔ BIẾN</div>
-            <div class="box-content">
-                <?php
-                $popular = $conn->query("SELECT keyword, COUNT(*) as cnt FROM search_logs 
-                                     WHERE keyword != '' GROUP BY keyword 
-                                     ORDER BY cnt DESC LIMIT 8");
-                if ($popular) {
-                    while ($row = $popular->fetch_assoc()) {
-                        echo '<div style="padding:3px 0;font-size:13px;">';
-                        echo '<a href="/search.php?q=' . urlencode($row['keyword']) . '">';
-                        echo htmlspecialchars($row['keyword']);
-                        echo '</a> <span style="color:#888;font-size:11px;">(' . $row['cnt'] . ')</span>';
-                        echo '</div>';
-                    }
-                }
-                ?>
-            </div>
-        </div>
     </div>
 
 </div><!-- /wrapper -->

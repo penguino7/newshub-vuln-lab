@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 // ============================================
 // api/suggest.php - API gợi ý tìm kiếm
 // VULNERABILITY: DOM-based XSS
@@ -31,18 +31,6 @@ if (strlen($q) >= 2) {
                     $suggestions[] = $tag;
                 }
             }
-        }
-    }
-
-    // Also suggest from search history
-    $log_result = $conn->query("SELECT DISTINCT keyword FROM search_logs 
-                                 WHERE keyword LIKE '%" . $q . "%' 
-                                 AND keyword != '' 
-                                 LIMIT 3");
-    if ($log_result) {
-        while ($row = $log_result->fetch_assoc()) {
-            // [VULN] Keyword từ DB (đã lưu raw từ user input) trả về không escape
-            $suggestions[] = $row['keyword'];
         }
     }
 
