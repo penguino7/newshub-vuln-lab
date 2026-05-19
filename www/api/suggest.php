@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ============================================
 // api/suggest.php - API gợi ý tìm kiếm
 // VULNERABILITY: DOM-based XSS

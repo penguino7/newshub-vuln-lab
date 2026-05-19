@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 // ============================================
 // search.php - Tìm kiếm tin tức
 // VULNERABILITY 1: SQLi Error-based (tham số ?q=)
