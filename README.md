@@ -267,23 +267,71 @@ Chi tiết payload, tham số và vị trí sink nằm trong:
 XSS_SQLI_TESTING_GUIDE.md
 ```
 
-## Reset database
+## Reset lab về trạng thái ban đầu
 
-Khi dùng Docker, reset toàn bộ database về trạng thái ban đầu:
+Trong quá trình test XSS/SQLi, lab có thể bị lưu nhiều dữ liệu rác như comment chứa payload, search log, page view log hoặc dữ liệu do scanner gửi vào. Nếu muốn đưa lab về trạng thái sạch như lúc mới chạy lần đầu, hãy reset database Docker volume.
+
+### Cách khuyến nghị: reset toàn bộ database
+
+Chạy trong thư mục có file `docker-compose.yml`:
 
 ```bash
+cd ~/labs/Vuln-lab
 docker compose down -v
 docker compose up -d --build
 ```
 
-Hoặc:
+Nếu máy dùng lệnh cũ `docker-compose`:
 
 ```bash
+cd ~/labs/Vuln-lab
 docker-compose down -v
 docker-compose up -d --build
 ```
 
-Lưu ý: `db/init.sql` chỉ được import khi volume database rỗng. Vì vậy muốn import lại seed data thì cần `down -v`.
+Sau đó kiểm tra lại:
+
+```bash
+docker compose ps || docker-compose ps
+```
+
+Mở lại lab:
+
+```text
+http://127.0.0.1:12001/
+```
+
+Lưu ý quan trọng:
+
+- `docker compose restart` chỉ khởi động lại container, không xóa dữ liệu cũ.
+- `docker compose down` chỉ dừng và xóa container/network, không xóa database volume.
+- `docker compose down -v` mới xóa volume `db_data`, vì vậy database sẽ được tạo lại từ `db/init.sql`.
+- Không dùng cách này nếu bạn đang muốn giữ lại dữ liệu test để phân tích.
+
+### Chỉ xóa dữ liệu test XSS trong comments
+
+Nếu chỉ muốn xóa các comment payload mà không reset toàn bộ database:
+
+```bash
+docker exec -it newshub-db mariadb -uroot -prootpass123 newshub \
+  -e "DELETE FROM comments WHERE content LIKE '%FUZZ%' OR author_name LIKE '%FUZZ%' OR content LIKE '%<script%';"
+```
+
+### Xóa thêm log sinh ra khi test
+
+Nếu muốn dọn cả search log và page view log:
+
+```bash
+docker exec -it newshub-db mariadb -uroot -prootpass123 newshub \
+  -e "TRUNCATE TABLE search_logs; TRUNCATE TABLE page_views;"
+```
+
+### Kiểm tra số lượng dữ liệu sau khi dọn
+
+```bash
+docker exec -it newshub-db mariadb -uroot -prootpass123 newshub \
+  -e "SELECT COUNT(*) AS comments FROM comments; SELECT COUNT(*) AS search_logs FROM search_logs; SELECT COUNT(*) AS page_views FROM page_views;"
+```
 
 ## Dừng lab
 
